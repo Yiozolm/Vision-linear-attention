@@ -1,5 +1,7 @@
 # Vision Linear Attention
 
+This repo aims at providing a collection of vision linear attention models
+
 ## Models
 
 | Year | Venue | Model | Paper | Code | |
