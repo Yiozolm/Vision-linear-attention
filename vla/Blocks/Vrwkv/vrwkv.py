@@ -5,6 +5,9 @@ from torch.utils.cpp_extension import load
 
 from einops import rearrange
 
+__all__ = ['RwkvBlock_BiV4']
+
+
 # arch有对应 86=3090 89=4090
 wkv_cuda = load(name="bi_wkv", sources=["./cuda/bi_wkv.cpp", "./cuda/bi_wkv_kernel.cu"],
                 verbose=True,
