@@ -34,8 +34,9 @@ class MambaVisionMixer(nn.Module):
         self.d_state = d_state
         self.d_conv = d_conv
         self.expand = expand
-        self.d_inner = int(self.expan0d * self.d_model)
+        self.d_inner = int(self.expand * self.d_model)
         self.dt_rank = math.ceil(self.d_model / 16) if dt_rank == "auto" else dt_rank
+
         self.in_proj = nn.Linear(self.d_model, self.d_inner, bias=bias)
         self.x_proj = nn.Linear(self.d_inner // 2, self.dt_rank + self.d_state * 2, bias=False)
         self.dt_proj = nn.Linear(self.dt_rank, self.d_inner // 2, bias=True)
