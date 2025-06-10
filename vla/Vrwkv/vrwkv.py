@@ -215,9 +215,8 @@ class ChannelMix(nn.Module):
 
 
 class RwkvBlock_BiV4(nn.Module):
-    def __init__(self, dim, hidden_rate=4, with_ckpt=False):
+    def __init__(self, dim, hidden_rate=4):
         super().__init__()
-        self.with_ckpt = with_ckpt
 
         self.ln1 = nn.LayerNorm(dim)
         self.ln2 = nn.LayerNorm(dim)
