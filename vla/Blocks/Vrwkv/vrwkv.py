@@ -229,6 +229,7 @@ class RwkvBlock_BiV4(nn.Module):
         self.gamma2 = nn.Parameter(torch.ones((dim)), requires_grad=True)
 
     def forward(self, x):
+        assert x.dim() == 4, 'Invalid dimension'
         B, C, H, W = x.shape
         resolution = (H, W)
 
