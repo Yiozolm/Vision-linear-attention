@@ -38,18 +38,20 @@ class VmambaMixer(nn.Module):
         self.expand = expand
         self.d_inner = int(self.expand * self.d_model)
         self.dt_rank = math.ceil(self.d_model / 16) if dt_rank == "auto" else dt_rank
+        self.d_proj = self.d_inner * 2
 
         k_group = 4
-        self.in_proj = nn.Linear(self.d_model, self.d_inner, bias=bias)
+        self.in_proj = nn.Linear(self.d_model, self.d_proj, bias=bias)
         self.x_proj = [
-            nn.Linear(self.d_inner, (dt_rank + d_state * 2), bias=False)
+            nn.Linear(self.d_inner, int(self.dt_rank + self.d_state * 2), bias=False)
             for _ in range(k_group)
         ]
         self.x_proj_weight = nn.Parameter(torch.stack([t.weight for t in self.x_proj], dim=0))
         del self.x_proj
+        self.act = nn.SiLU()
 
         # out proj =======================================
-        self.out_act = nn.GELU() if self.oact else nn.Identity()
+        self.out_act = nn.GELU()
         self.out_proj = nn.Linear(self.d_inner, d_model, bias=bias)
         self.dropout = nn.Dropout(dropout) if dropout > 0. else nn.Identity()
 
@@ -69,6 +71,7 @@ class VmambaMixer(nn.Module):
                 ),
                 Permute(0, 2, 3, 1),
             )
+        self.out_norm = nn.LayerNorm(self.d_inner)
 
     def forward_core(self, x):
         B, H, W, RD = x.shape
@@ -106,7 +109,7 @@ class VmambaMixer(nn.Module):
 
     def forward(self, x):
         x = self.in_proj(x)
-        x, z = x.chunk(2, dim=1)  # b d l
+        x, z = x.chunk(2, dim=-1)  # (b, h, w, d)
         z = self.act(z)
         x = self.conv2d(x)
         x = self.act(x)
@@ -140,10 +143,9 @@ class VmambaBlock(nn.Module):
             self.gamma_2 = nn.Parameter(init_value * torch.ones(dim))
 
     def forward(self, x):
-        assert x.dim() in (3, 4), 'Invalid dimension'
-        if x.dim() == 4:
-            _, _, H, W = x.shape
-            x = rearrange(x, "b c h w -> b (h w) c")
+        assert x.dim()==4, 'Invalid dimension'
+        # assume the input follows [b, c, h, w]
+        x = rearrange(x, 'b c h w -> b h w c')
 
         if self.layer_scale:
             x = x + self.drop_path(self.gamma_1 * self.mixer(self.ln1(x)))
@@ -152,6 +154,5 @@ class VmambaBlock(nn.Module):
             x = x + self.drop_path(self.mixer(self.ln1(x)))
             x = x + self.drop_path(self.mlp(self.ln2(x)))
 
-        if x.dim() == 4:
-            x = rearrange(x, "b (h w) c -> b c h w", h=H, w=W)
+        x = rearrange(x, 'b h w c -> b c h w')
         return x

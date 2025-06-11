@@ -142,7 +142,8 @@ class MambaVisionBlock(nn.Module):
 
     def forward(self, x):
         assert x.dim() in (3, 4), 'Invalid dimension'
-        if x.dim() == 4:
+        dims = x.dim()
+        if dims == 4:
             _, _, H, W = x.shape
             x = rearrange(x, "b c h w -> b (h w) c")
 
@@ -153,6 +154,6 @@ class MambaVisionBlock(nn.Module):
             x = x + self.drop_path(self.mixer(self.ln1(x)))
             x = x + self.drop_path(self.mlp(self.ln2(x)))
 
-        if x.dim() == 4:
+        if dims == 4:
             x = rearrange(x, "b (h w) c -> b c h w", h=H, w=W)
         return x

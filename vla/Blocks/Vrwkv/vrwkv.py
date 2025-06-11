@@ -1,23 +1,30 @@
+import os
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.cpp_extension import load
+from functools import lru_cache
 
 from einops import rearrange
 
 __all__ = ['RwkvBlock_BiV4']
 
 
-# arch有对应 86=3090 89=4090
-wkv_cuda = load(name="bi_wkv", sources=["./cuda/bi_wkv.cpp", "./cuda/bi_wkv_kernel.cu"],
-                verbose=True,
-                extra_cuda_cflags=['-res-usage', '--maxrregcount 60', '--use_fast_math', '-O3', '-Xptxas -O3',
-                                   '-gencode arch=compute_86,code=sm_86'])
-
+@lru_cache(maxsize=1)
+def _load_vrwkv_cuda_kernel():
+    # arch有对应 86=3090 89=4090
+    abspath = os.path.dirname(os.path.abspath(__file__))
+    wkv_cuda = load(name="bi_wkv", sources=[os.path.join(abspath, "cuda/bi_wkv.cpp"),os.path.join(abspath, "cuda/bi_wkv_kernel.cu") ],
+                    verbose=True,
+                    extra_cuda_cflags=['-res-usage', '--maxrregcount 60', '--use_fast_math', '-O3', '-Xptxas -O3',
+                                    '-gencode arch=compute_86,code=sm_86'])
+    return wkv_cuda
 
 class WKV(torch.autograd.Function):
     @staticmethod
     def forward(ctx, w, u, k, v):
+        wkv_cuda = _load_vrwkv_cuda_kernel()
         half_mode = (w.dtype == torch.half)
         bf_mode = (w.dtype == torch.bfloat16)
         ctx.save_for_backward(w, u, k, v)
@@ -34,6 +41,7 @@ class WKV(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, gy):
+        wkv_cuda = _load_vrwkv_cuda_kernel()
         w, u, k, v = ctx.saved_tensors
         half_mode = (w.dtype == torch.half)
         bf_mode = (w.dtype == torch.bfloat16)
@@ -57,8 +65,6 @@ def RUN_CUDA(w, u, k, v):
 def q_shift(input, shift_pixel=1, gamma=1 / 4, patch_resolution=None):
     # vanilla qshift in VisionRwkv, https://github.com/OpenGVLab/Vision-RWKV
     assert gamma <= 1 / 4
-    B, N, C = input.shape
-    input = input.transpose(1, 2).reshape(B, C, patch_resolution[0], patch_resolution[1])
     B, C, H, W = input.shape
     output = torch.zeros_like(input)
     output[:, 0:int(C * gamma), :, shift_pixel:W] = input[:, 0:int(C * gamma), :, 0:W - shift_pixel]
@@ -70,7 +76,7 @@ def q_shift(input, shift_pixel=1, gamma=1 / 4, patch_resolution=None):
                                                                              int(C * gamma * 3):int(C * gamma * 4),
                                                                              shift_pixel:H, :]
     output[:, int(C * gamma * 4):, ...] = input[:, int(C * gamma * 4):, ...]
-    return output.flatten(2).transpose(1, 2)
+    return output
 
 
 class OmniShift(nn.Module):
@@ -173,7 +179,7 @@ class SpatialMix(nn.Module):
 
     def jit_func(self, x, resolution):
         H, W = resolution
-        x = rearrange(x, "b (h w) c -> b c h w", h=H, w=W)
+        x = rearrange(x, "b (h w) c -> b c h w", h=H, w=W) 
         x = self.shift(x, patch_resolution=resolution)
         x = rearrange(x, "b c h w -> b (h w) c")
 
@@ -232,7 +238,6 @@ class RwkvBlock_BiV4(nn.Module):
         assert x.dim() == 4, 'Invalid dimension'
         B, C, H, W = x.shape
         resolution = (H, W)
-
         x = rearrange(x, "b c h w -> b (h w) c")
         x = x + self.gamma1 * self.att(self.ln1(x), resolution)
         x = x + self.gamma2 * self.ffn(self.ln2(x), resolution)

@@ -1,1 +1,1 @@
-from Vmamba import VmambaMixer
+from .Vmamba import VmambaBlock

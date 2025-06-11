@@ -11,6 +11,20 @@ TRITON_22 = version.parse(triton.__version__) >= version.parse('2.2.0')
 def init_to_zero(names):
     return lambda nargs: [nargs[name].zero_() for name in names if nargs[name] is not None]
 
+@triton.jit
+def log1p(x):
+    """
+    Triton 3.1.0 中 tl.math.log1p 的数值稳定实现。
+    计算 log(1 + x)。
+    """
+    # 正常情况下，我们计算 log(1 + x)
+    y = 1.0 + x
+    
+    # 当 x 非常小时，1.0 + x 可能由于浮点精度限制而等于 1.0。
+    # 在这种情况下，log(1+x) 的一阶泰勒展开近似为 x。
+    # tl.where(condition, value_if_true, value_if_false)
+    return tl.where(y == 1.0, x, tl.log(y))
+
 
 @triton.jit
 def triton_cross_scan_flex(
@@ -188,7 +202,7 @@ def _chunk_cumsum_fwd_kernel(
         dt_bias = tl.load(dt_bias_ptr + offs_h * stride_dt_bias_head, mask=offs_h < nheads, other=0.0).to(tl.float32)
         dt += dt_bias[:, None]
     if DT_SOFTPLUS:
-        dt = tl.where(dt <= 20.0, tl.math.log1p(tl.exp(dt)), dt)
+        dt = tl.where(dt <= 20.0, log1p(tl.exp(dt)), dt)
     # As of Triton 2.2.0, tl.clamp is not available yet
     # dt = tl.clamp(dt, dt_min, dt_max)
     dt = tl.minimum(tl.maximum(dt, dt_min), dt_max)
@@ -2378,7 +2392,7 @@ def _chunk_cumsum_bwd_kernel(
         dt += dt_bias[:, None]
     if DT_SOFTPLUS:
         dt_presoftplus = dt
-        dt = tl.where(dt <= 20.0, tl.math.log1p(tl.exp(dt)), ddt)
+        dt = tl.where(dt <= 20.0, log1p(tl.exp(dt)), ddt)
     clamp_mask = (dt < dt_min) | (dt > dt_max)
     # As of Triton 2.2.0, tl.clamp is not available yet
     # dt = tl.clamp(dt, dt_min, dt_max)
