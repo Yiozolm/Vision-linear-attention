@@ -1,0 +1,41 @@
+# pyproject.toml
+
+# 1. 定义构建系统 (这是标准模板)
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+# 2. 定义项目元数据 (从 setup.py 翻译而来)
+[project]
+name = "vision-linear-attention"
+version = "0.1.0" # 你可以从这里管理版本
+authors = [
+  { name="Fangzhou Yi", email="m202310581@xs.ustb.edu.cn" },
+]
+description = "Vision Linear Attention - Collections of Vision linear attention for easy plug-in module"
+readme = "README.md"
+requires-python = ">=3.11"
+keywords = [
+  "artificial intelligence",
+  "deep learning",
+  "attention mechanism",
+]
+license = { text = "MIT" }
+classifiers=[
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+]
+
+# 3. 定义依赖项 (从 install_requires 翻译而来)
+dependencies = [
+    "torch>=2.5.1",
+    "ninja",
+    "timm",
+    "einops",
+]
+
+[project.urls]
+Homepage = "https://github.com/Yiozolm/Vision-linear-attention"

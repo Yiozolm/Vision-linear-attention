@@ -8,6 +8,14 @@ This repo aims at providing a collection of vision linear attention models
 - [x] Vision-Rwkv **add init mode in the future**
 
 ## Installation
+The following requirements should be satisfied
+- [PyTorch](https://pytorch.org/) >= 2.5 (CUDA>=12.4)
+- [Triton](https://github.com/openai/triton) >= 3.0
+- [Mamba-ssm](https://github.com/state-spaces/mamba) (**Manual** installation from .whl files)
+- [einops](https://github.com/arogozhnikov/einops)
+- [Timm](https://github.com/huggingface/pytorch-image-models)
+
+You can install `vla` with pip:
 ```bash
 git clone https://github.com/Yiozolm/Vision-linear-attention.git
 cd Vision-linear-attention
