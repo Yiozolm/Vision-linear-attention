@@ -3,11 +3,16 @@
 This repo aims at providing a collection of vision linear attention models
 
 ## ToDo
-- [x] Vmamba **Not tested yet**
-- [x] MambaVision **Not tested yet**
-- [x] Vision-Rwkv
+- [x] Vmamba 
+- [x] MambaVision 
+- [x] Vision-Rwkv **add init mode in the future**
 
-
+## Installation
+```bash
+git clone https://github.com/Yiozolm/Vision-linear-attention.git
+cd Vision-linear-attention
+pip install -e .
+```
 ## Models
 
 | Year | Venue   | Model       | Paper                                                                                                                  | Code                                                 | 
