@@ -232,23 +232,9 @@ __global__ void bi_wkv_cuda_backward_kernel(
         dddw = dddw * exp(o1 - no) + (Sdbdw[i][channel_id] - exp_w * Sb[i][channel_id])
              * exp(So2[i][channel_id] - w * exp_w - no);
         o1 = no;
-        // const int exp_w = (i - token_id) * _T;
-        // scalar_t no = max(__shfl_sync(0Xffffffff, o1, i) - w * exp_w, o3);
-        // c2 = c2 * exp(o3 - no) + __shfl_sync(0Xffffffff, c, i) * exp(__shfl_sync(0Xffffffff, o1, i) - w * exp_w - no);
-        // d2 = d2 * exp(o3 - no) + __shfl_sync(0Xffffffff, d, i) * exp(__shfl_sync(0Xffffffff, o1, i) - w * exp_w - no);
-        // dcdw2 = dcdw2 * exp(o3 - no) + (__shfl_sync(0Xffffffff, dcdw, i) - exp_w * __shfl_sync(0Xffffffff, c, i))
-        //      * exp(__shfl_sync(0Xffffffff, o1, i) - w * exp_w - no);
-        // dddw2 = dddw2 * exp(o3 - no) + (__shfl_sync(0Xffffffff, dddw, i) - exp_w * __shfl_sync(0Xffffffff, d, i))
-        //      * exp(__shfl_sync(0Xffffffff, o1, i) - w * exp_w - no);
-        // o3 = no;
     }
     c -= exp(k[_t * C] - o1) * v[_t * C];
     d -= exp(k[_t * C] - o1);
-    // c = c2 - exp(k[_t * C] - o3) * v[_t * C];
-    // d = d2 - exp(k[_t * C] - o3);
-    // dcdw = dcdw2;
-    // dddw = dddw2;
-    // o1 = o3;
 
     scalar_t gw = 0, gu = 0;
     scalar_t gc = 0, gd = 0, ga = 0, gb = 0;
@@ -381,7 +367,7 @@ torch::Tensor bi_wkv_cuda_forward(
     assert(batch_size * num_channels % threads.y == 0);
     const dim3 blocks(batch_size * num_channels / threads.y);
 
-    AT_DISPATCH_FLOATING_TYPES(k.type(), "bi_wkv_forward_cuda", ([&] {
+    AT_DISPATCH_FLOATING_TYPES(k.scalar_type(), "bi_wkv_forward_cuda", ([&] {
         bi_wkv_cuda_forward_kernel<scalar_t><<<blocks, threads>>>(
             batch_size,
             num_tokens,
@@ -418,7 +404,7 @@ std::vector<torch::Tensor> bi_wkv_cuda_backward(
     assert(batch_size * num_channels % threads.y == 0);
     const dim3 blocks(batch_size * num_channels / threads.y);
 
-    AT_DISPATCH_FLOATING_TYPES(k.type(), "bi_wkv_backward_cuda", ([&] {
+    AT_DISPATCH_FLOATING_TYPES(k.scalar_type(), "bi_wkv_backward_cuda", ([&] {
         bi_wkv_cuda_backward_kernel<scalar_t><<<blocks, threads>>>(
             batch_size,
             num_tokens,

@@ -1,17 +1,25 @@
 # Vision Linear Attention
 
+**Note!**: This branch aims at building vls module on window pc for short time debugging not long-term stable training
+
 This repo aims at providing a collection of vision linear attention models
 
 ## ToDo
-- [x] Vmamba 
+- [ ] Vmamba **mamba_ssm to be solved**
 - [x] MambaVision 
 - [x] Vision-Rwkv **add init mode in the future**
+
+## Windows Testing Enviroment
+- Win11 23H2
+- CUDA12.8
+- torch2.7.1
+- Visual Studio 2022
+- GPU: RTX3060ti
 
 ## Installation
 The following requirements should be satisfied
 - [PyTorch](https://pytorch.org/) >= 2.5 (CUDA>=12.4)
-- [Triton](https://github.com/openai/triton) >= 3.0
-- [Mamba-ssm](https://github.com/state-spaces/mamba) (**Manual** installation from .whl files)
+- [Triton-windows](https://github.com/woct0rdho/triton-windows) >= 3.0
 - [einops](https://github.com/arogozhnikov/einops)
 - [Timm](https://github.com/huggingface/pytorch-image-models)
 

@@ -12,13 +12,53 @@ __all__ = ['RwkvBlock_BiV4']
 
 
 @lru_cache(maxsize=1)
+# def _load_vrwkv_cuda_kernel():
+#     # arch有对应 86=3090 89=4090
+#     abspath = os.path.dirname(os.path.abspath(__file__))
+#     wkv_cuda = load(name="bi_wkv", sources=[os.path.join(abspath, "cuda/bi_wkv.cpp"),os.path.join(abspath, "cuda/bi_wkv_kernel.cu") ],
+#                     verbose=True,
+#                     extra_cuda_cflags=['-res-usage', '--maxrregcount=60', '--use_fast_math', '/02', '-Xptxas=/02'])
+#     return wkv_cuda
 def _load_vrwkv_cuda_kernel():
-    # arch有对应 86=3090 89=4090
     abspath = os.path.dirname(os.path.abspath(__file__))
-    wkv_cuda = load(name="bi_wkv", sources=[os.path.join(abspath, "cuda/bi_wkv.cpp"),os.path.join(abspath, "cuda/bi_wkv_kernel.cu") ],
-                    verbose=True,
-                    extra_cuda_cflags=['-res-usage', '--maxrregcount 60', '--use_fast_math', '-O3', '-Xptxas -O3',
-                                    '-gencode arch=compute_86,code=sm_86'])
+
+    # Corrected: List the renamed C++ file as a .cu file.
+    # You must rename the file on your disk from bi_wkv.cpp to bi_wkv.cu
+    source_files = [
+        os.path.join(abspath, "cuda\\bi_wkv.cpp"),
+        os.path.join(abspath, "cuda\\bi_wkv_kernel.cu")
+    ]
+
+    # --- Compiler Flags (these are correct from the last version) ---
+    extra_cuda_cflags = [
+        '-res-usage',
+        '--maxrregcount=60',
+        '--use_fast_math',
+        '-Xptxas', '-O3',  # Note: Capital 'O', not zero '0'
+    ]
+
+    gencode_flags = [
+        '-gencode', 'arch=compute_75,code=sm_75',
+        '-gencode', 'arch=compute_80,code=sm_80',
+        '-gencode', 'arch=compute_86,code=sm_86',
+        '-gencode', 'arch=compute_89,code=sm_89',
+        '-gencode', 'arch=compute_90,code=sm_90',
+    ]
+    extra_cuda_cflags.extend(gencode_flags)
+
+    import sys
+    if sys.platform == "win32":
+        extra_cflags = ["/O2"]
+    else:
+        extra_cflags = ["-O3"]
+
+    wkv_cuda = load(
+        name="bi_wkv",
+        sources=source_files,
+        verbose=True,
+        extra_cflags=extra_cflags,
+        extra_cuda_cflags=extra_cuda_cflags
+    )
     return wkv_cuda
 
 class WKV(torch.autograd.Function):
