@@ -6,6 +6,8 @@ import torch.nn.functional as F
 from torch.utils.cpp_extension import load
 from functools import lru_cache
 
+from vla.ops import Qshift_optimized, Qshift_extreme
+
 from einops import rearrange
 
 __all__ = ['RwkvBlock_BiV4']
@@ -62,7 +64,7 @@ def RUN_CUDA(w, u, k, v):
     return WKV.apply(w.cuda(), u.cuda(), k.cuda(), v.cuda())
 
 
-def q_shift(input, shift_pixel=1, gamma=1 / 4, patch_resolution=None):
+def q_shift(input, shift_pixel=1, gamma=1 / 4):
     # vanilla qshift in VisionRwkv, https://github.com/OpenGVLab/Vision-RWKV
     assert gamma <= 1 / 4
     B, C, H, W = input.shape
@@ -163,12 +165,19 @@ class OmniShift(nn.Module):
 
 
 class SpatialMix(nn.Module):
-    def __init__(self, dim):
+    def __init__(self, dim, mode='triton'):
         super().__init__()
         self.dim = dim
         attn_dim = dim
 
-        self.shift = q_shift
+        if mode == 'torch':
+            self.shift = q_shift
+        elif mode =='triton':
+            self.shift = Qshift_optimized
+        elif mode == 'extreme':
+            self.shift = Qshift_extreme
+        else:
+            raise NotImplementedError
         self.key = nn.Linear(dim, attn_dim, bias=False)
         self.value = nn.Linear(dim, attn_dim, bias=False)
         self.receptance = nn.Linear(dim, attn_dim, bias=False)
@@ -180,7 +189,7 @@ class SpatialMix(nn.Module):
     def jit_func(self, x, resolution):
         H, W = resolution
         x = rearrange(x, "b (h w) c -> b c h w", h=H, w=W) 
-        x = self.shift(x, patch_resolution=resolution)
+        x = self.shift(x)
         x = rearrange(x, "b c h w -> b (h w) c")
 
         k = self.key(x)
@@ -200,12 +209,19 @@ class SpatialMix(nn.Module):
 
 
 class ChannelMix(nn.Module):
-    def __init__(self, dim, hidden_rate=4):
+    def __init__(self, dim, hidden_rate=4, mode='triton'):
         super().__init__()
         self.n_embd = dim
         hidden_dim = int(hidden_rate * dim)
 
-        self.shift = q_shift
+        if mode == 'torch':
+            self.shift = q_shift
+        elif mode =='triton':
+            self.shift = Qshift_optimized
+        elif mode == 'extreme':
+            self.shift = Qshift_extreme
+        else:
+            raise NotImplementedError
         self.key = nn.Linear(dim, hidden_dim, bias=False)
         self.receptance = nn.Linear(dim, dim, bias=False)
         self.value = nn.Linear(hidden_dim, dim, bias=False)
@@ -213,7 +229,7 @@ class ChannelMix(nn.Module):
     def forward(self, x, resolution):
         H, W = resolution
         x = rearrange(x, "b (h w) c -> b c h w", h=H, w=W)
-        x = self.shift(x, patch_resolution=resolution)
+        x = self.shift(x)
         x = rearrange(x, "b c h w -> b (h w) c")
 
         k = self.key(x)
@@ -224,13 +240,13 @@ class ChannelMix(nn.Module):
 
 
 class RwkvBlock_BiV4(nn.Module):
-    def __init__(self, dim, hidden_rate=4):
+    def __init__(self, dim, hidden_rate=4, mode='triton'):
         super().__init__()
 
         self.ln1 = nn.LayerNorm(dim)
         self.ln2 = nn.LayerNorm(dim)
-        self.att = SpatialMix(dim)
-        self.ffn = ChannelMix(dim, hidden_rate)
+        self.att = SpatialMix(dim, mode=mode)
+        self.ffn = ChannelMix(dim, hidden_rate, mode=mode)
         self.gamma1 = nn.Parameter(torch.ones((dim)), requires_grad=True)
         self.gamma2 = nn.Parameter(torch.ones((dim)), requires_grad=True)
 
