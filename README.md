@@ -6,6 +6,7 @@ This repo aims at providing a collection of vision linear attention models
 - [x] Vmamba 
 - [x] MambaVision 
 - [x] Vision-Rwkv **add init mode in the future**
+- [ ] GSPN **Not tested yet, torch & triton kernel**
 
 ## Installation
 The following requirements should be satisfied
@@ -28,6 +29,7 @@ pip install -e .
 | 2024 | NeurIPS | Vmamba      | [VMamba: Visual State Space Model](https://arxiv.org/abs/2401.10166)                                                   | [official](https://github.com/MzeroMiko/VMamba)      | 
 | 2025 | ICLR    | MambaVision | [MambaVision: A Hybrid Mamba-Transformer Vision Backbone](https://arxiv.org/abs/2407.08083)                            | [official](https://github.com/NVlabs/MambaVision)    | 
 | 2025 | ICLR    | Vision-Rwkv | [Vision-RWKV: Efficient and Scalable Visual Perception with RWKV-Like Architectures](https://arxiv.org/abs/2403.02308) | [official](https://github.com/OpenGVLab/Vision-RWKV) | 
+| 2025 | CVPR    | GSPN        | [Parallel Sequence Modeling via Generalized Spatial Propagation Network](https://openaccess.thecvf.com/content/CVPR2025/html/Wang_Parallel_Sequence_Modeling_via_Generalized_Spatial_Propagation_Network_CVPR_2025_paper.html) | [official](https://github.com/NVlabs/GSPN) |
 
 ## Acknowledgments
 We would like to express our deepest respect to [Songlin](https://github.com/sustcsonglin) and other maintainers of the [fla](https://github.com/fla-org/flash-linear-attention) library.
