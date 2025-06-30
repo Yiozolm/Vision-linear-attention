@@ -6,7 +6,7 @@ This repo aims at providing a collection of vision linear attention models
 - [x] Vmamba 
 - [x] MambaVision 
 - [x] Vision-Rwkv **add init mode in the future**
-- [ ] GSPN **Not tested yet, torch & triton kernel**
+- [ ] GSPN **torch & triton kernel**
 
 ## Installation
 The following requirements should be satisfied
