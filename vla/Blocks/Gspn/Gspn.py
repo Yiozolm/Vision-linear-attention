@@ -167,13 +167,14 @@ class GSPNBlock(nn.Module):
             mlp_drop=0.,
             drop_path=0.,
             init_value=None,
-            act_layer=nn.GELU):
+            act_layer=nn.GELU,
+            channel_first=True):
         super().__init__()
-        self.mixer = Gspn(feat_size=feat_size, items_each_chunk=items_each_chunk,d_model=dim, d_state=8, d_conv=3, expand=1)
+        self.mixer = Gspn(feat_size=feat_size, items_each_chunk=items_each_chunk,d_model=dim, d_state=8, d_conv=3, expand=1, channel_first=channel_first)
         hidden_dim = int(dim * hidden_rate)
-        self.mlp = Mlp(in_features=dim, hidden_features=hidden_dim, act_layer=act_layer, drop=mlp_drop, channels_first=True)
-        self.ln1 = nn.LayerNorm(dim)
-        self.ln2 = nn.LayerNorm(dim)
+        self.mlp = Mlp(in_features=dim, hidden_features=hidden_dim, act_layer=act_layer, drop=mlp_drop, channels_first=channel_first)
+        self.ln1 = LayerNorm2d(dim)
+        self.ln2 = LayerNorm2d(dim)
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         self.layer_scale = (init_value is not None)
         if self.layer_scale:
@@ -189,8 +190,8 @@ class GSPNBlock(nn.Module):
             x = x + self.drop_path(self.gamma_1 * self.mixer(self.ln1(x)))
             x = x + self.drop_path(self.gamma_2 * self.mlp(self.ln2(x)))
         else:
-            x = x + self.drop_path(self.mixer(x))
+            x = x + self.drop_path(self.mixer(self.ln1(x)))
             print(x.size())
-            x = x + self.drop_path(self.mlp(x))
-
+            x = x + self.drop_path(self.mlp(self.ln2(x)))
+            
         return x
