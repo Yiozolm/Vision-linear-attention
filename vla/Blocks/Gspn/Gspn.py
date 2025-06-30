@@ -8,12 +8,12 @@
 
 import torch
 import torch.nn as nn
-from timm.layers import Mlp
+# from timm.layers import Mlp
 
 from einops import rearrange
 from vla.ops import DropPath
 
-from .utils import Linear2d, LayerNorm2d, GRN, normalize_w, GateRecurrent2dnoind
+from .utils import Linear2d, LayerNorm2d, GRN, normalize_w, GateRecurrent2dnoind, Mlp
 
 
 class Gspn(nn.Module):
@@ -56,8 +56,6 @@ class Gspn(nn.Module):
         Linear = Linear2d if channel_first else nn.Linear
         LayerNorm = LayerNorm2d if channel_first else nn.LayerNorm
 
-        self.forward = self.forwardv1
-        self.forward_core = self.forward_corev1
 
         if is_glayers:
             self.items_each_chunk = feat_size
@@ -118,7 +116,7 @@ class Gspn(nn.Module):
             out = out * u
         return out
 
-    def forward_corev1(self, x: torch.Tensor = None, **kwargs):
+    def forward_core(self, x: torch.Tensor = None, **kwargs):
         B, D, H, W = x.shape
 
         x_proxy = self.x_conv_down(x)
@@ -173,7 +171,7 @@ class GSPNBlock(nn.Module):
         super().__init__()
         self.mixer = Gspn(feat_size=feat_size, items_each_chunk=items_each_chunk,d_model=dim, d_state=8, d_conv=3, expand=1)
         hidden_dim = int(dim * hidden_rate)
-        self.mlp = Mlp(in_features=dim, hidden_features=hidden_dim, act_layer=act_layer, drop=mlp_drop)
+        self.mlp = Mlp(in_features=dim, hidden_features=hidden_dim, act_layer=act_layer, drop=mlp_drop, channels_first=True)
         self.ln1 = nn.LayerNorm(dim)
         self.ln2 = nn.LayerNorm(dim)
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
@@ -184,19 +182,15 @@ class GSPNBlock(nn.Module):
             self.gamma_2 = nn.Parameter(init_value * torch.ones(dim))
 
     def forward(self, x):
-        assert x.dim() in (3, 4), 'Invalid dimension'
-        dims = x.dim()
-        if dims == 4:
-            _, _, H, W = x.shape
-            x = rearrange(x, "b c h w -> b (h w) c")
+        assert x.dim() == 4, 'Invalid dimension'
+        print(x.size())
 
         if self.layer_scale:
             x = x + self.drop_path(self.gamma_1 * self.mixer(self.ln1(x)))
             x = x + self.drop_path(self.gamma_2 * self.mlp(self.ln2(x)))
         else:
-            x = x + self.drop_path(self.mixer(self.ln1(x)))
-            x = x + self.drop_path(self.mlp(self.ln2(x)))
+            x = x + self.drop_path(self.mixer(x))
+            print(x.size())
+            x = x + self.drop_path(self.mlp(x))
 
-        if dims == 4:
-            x = rearrange(x, "b (h w) c -> b c h w", h=H, w=W)
         return x
