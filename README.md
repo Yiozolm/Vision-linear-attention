@@ -7,7 +7,7 @@ This repo aims at providing a collection of vision linear attention models
 - [x] MambaVision 
 - [x] Vision-Rwkv **add init mode in the future**
 - [ ] GSPN **torch & triton kernel**
-- [ ] GroupMamba **To be tested**
+- [ ] GroupMamba **The Scan module will be integrated in the future**
 
 ## Installation
 The following requirements should be satisfied

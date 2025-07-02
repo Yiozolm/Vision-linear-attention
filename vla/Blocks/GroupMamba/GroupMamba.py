@@ -3,7 +3,7 @@ import torch.nn as nn
 
 import math
 from einops import rearrange
-from timm.layers import Mlp, trunc_normal_
+from timm.layers import trunc_normal_
 
 from .ss2d import SS2D
 from vla.ops import DropPath
@@ -152,7 +152,7 @@ class GroupMambaBlock(nn.Module):
         super().__init__()
         self.mixer = GroupMambaMixer(input_dim=dim, output_dim=dim, d_state=8, d_conv=3, expand=1)
         hidden_dim = int(dim * hidden_rate)
-        self.mlp = Mlp(in_features=dim, hidden_features=hidden_dim, act_layer=act_layer, drop=mlp_drop)
+        self.mlp = PVT2FFN(in_features=dim, hidden_features=hidden_dim)
         self.ln1 = nn.LayerNorm(dim)
         self.ln2 = nn.LayerNorm(dim)
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
@@ -170,10 +170,10 @@ class GroupMambaBlock(nn.Module):
 
         if self.layer_scale:
             x = x + self.drop_path(self.gamma_1 * self.mixer(x, H, W))
-            x = x + self.drop_path(self.gamma_2 * self.mlp(self.ln2(x)))
+            x = x + self.drop_path(self.gamma_2 * self.mlp(self.ln2(x), H, W))
         else:
-            x = x + self.drop_path(self.mixer(x))
-            x = x + self.drop_path(self.mlp(self.ln2(x)))
+            x = x + self.drop_path(self.mixer(x, H, W))
+            x = x + self.drop_path(self.mlp(self.ln2(x), H, W))
 
-        x = rearrange(x, 'b h w c -> b c h w')
+        x = rearrange(x, 'b (h w) c -> b c h w', h=H, w=W)
         return x
