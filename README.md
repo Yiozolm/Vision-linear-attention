@@ -31,7 +31,7 @@ pip install -e .
 | 2025 | ICLR    | MambaVision | [MambaVision: A Hybrid Mamba-Transformer Vision Backbone](https://arxiv.org/abs/2407.08083)                            | [official](https://github.com/NVlabs/MambaVision)    | 
 | 2025 | ICLR    | Vision-Rwkv | [Vision-RWKV: Efficient and Scalable Visual Perception with RWKV-Like Architectures](https://arxiv.org/abs/2403.02308) | [official](https://github.com/OpenGVLab/Vision-RWKV) | 
 | 2025 | CVPR    | GSPN        | [Parallel Sequence Modeling via Generalized Spatial Propagation Network](https://openaccess.thecvf.com/content/CVPR2025/html/Wang_Parallel_Sequence_Modeling_via_Generalized_Spatial_Propagation_Network_CVPR_2025_paper.html) | [official](https://github.com/NVlabs/GSPN) |
-| 2025 | CVPR    | GSPN        | [GroupMamba: Parameter-Efficient and Accurate Group Visual State Space Model](https://openaccess.thecvf.com/content/CVPR2025/html/Shaker_GroupMamba_Efficient_Group-Based_Visual_State_Space_Model_CVPR_2025_paper.html) | [official](https://github.com/Amshaker/GroupMamba) |
+| 2025 | CVPR    | GroupMamba  | [GroupMamba: Parameter-Efficient and Accurate Group Visual State Space Model](https://openaccess.thecvf.com/content/CVPR2025/html/Shaker_GroupMamba_Efficient_Group-Based_Visual_State_Space_Model_CVPR_2025_paper.html) | [official](https://github.com/Amshaker/GroupMamba) |
 
 
 ## Acknowledgments
