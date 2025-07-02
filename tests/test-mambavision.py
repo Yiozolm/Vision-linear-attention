@@ -1,5 +1,4 @@
-from vla.Blocks.MambaVisionMixer import MambaVisionBlock
-import torch
+from vla.Blocks.MambaVision.MambaVisionMixer import MambaVisionBlock
 from torchsummary import summary
 
 if __name__=="__main__":
