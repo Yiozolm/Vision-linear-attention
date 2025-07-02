@@ -5,7 +5,7 @@ import math
 from einops import rearrange
 from timm.layers import Mlp, trunc_normal_
 
-from vla.Blocks.Vmamba import VmambaMixer as SS2D
+from .ss2d import SS2D
 from vla.ops import DropPath
 
 try:
