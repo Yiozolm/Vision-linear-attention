@@ -20,7 +20,7 @@ class BasicBlock(nn.Module):
             self,
             dim,
             hidden_rate,
-            SpatialMixer,
+            SpatialMixer:nn.Module,
             mlp_drop=0.,
             drop_rate=0.,
             init_value=None,
@@ -32,6 +32,7 @@ class BasicBlock(nn.Module):
         self.ln1 = nn.LayerNorm(dim)
         self.ln2 = nn.LayerNorm(dim)
         self.drop_path = DropPath(drop_prob=drop_rate) if drop_rate > 0 else nn.Identity()
+        self.layer_scale = (init_value is not None)
         if self.layer_scale:
             self.gamma_1 = nn.Parameter(init_value * torch.ones(dim))
             self.gamma_2 = nn.Parameter(init_value * torch.ones(dim))
@@ -39,19 +40,21 @@ class BasicBlock(nn.Module):
     def forward(
             self,
             x: torch.Tensor,
-            resolution:Optional[Tuple, List]=None
+            resolution:Optional[Tuple]=None
     ) -> torch.Tensor:
         assert x.dim() in [3, 4], 'Invalid dimension'
-        if x.dim() == 4:
-            x = rearrange(x, 'b c h w -> b h w c')
+        xdim = x.dim()
+        if xdim == 4:
+            _, _, H, W = x.shape
+            x = rearrange(x, 'b c h w -> b (h w) c')
 
         if self.layer_scale:
-            x = x + self.drop_path(self.gamma_1 * self.mixer(self.ln1(x))[0])
-            x = x + self.drop_path(self.gamma_2 * self.mlp(self.ln2(x)))
+            x = x + self.drop_path(self.gamma_1 * self.SpatialMixer(self.ln1(x))[0])
+            x = x + self.drop_path(self.gamma_2 * self.ChannelMixer(self.ln2(x)))
         else:
-            x = x + self.drop_path(self.mixer(self.ln1(x))[0])
-            x = x + self.drop_path(self.mlp(self.ln2(x)))
+            x = x + self.drop_path(self.SpatialMixer(self.ln1(x))[0])
+            x = x + self.drop_path(self.ChannelMixer(self.ln2(x)))
 
-        if x.dim() == 4:
-            x = rearrange(x, 'b h w c -> b c h w')
+        if xdim == 4:
+            x = rearrange(x, 'b (h w) c -> b c h w', h=H, w=W)
         return x
