@@ -1,0 +1,6 @@
+torch>=2.5.1
+ninja
+timm
+einops
+# Note: mamba-ssm requires manual installation from .whl files
+# See https://github.com/state-spaces/mamba for details
