@@ -1,34 +1,43 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2023-2025, Songlin Yang, Yu Zhang
-from typing import Optional, List, Tuple
-
-# A Unified Interface for Linear Attentions in fla
-
+from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
-
-from timm.layers import Mlp
 from einops import rearrange
+from timm.layers import Mlp
 
 from vla.ops import DropPath
 
+# A Unified Interface for Linear Attentions in fla
+
 __all__ = ['BasicBlock']
+
 
 class BasicBlock(nn.Module):
     def __init__(
             self,
             dim,
             hidden_rate,
-            SpatialMixer:nn.Module,
+            SpatialMixer: nn.Module,
             mlp_drop=0.,
             drop_rate=0.,
             init_value=None,
-            act_layer=nn.GELU):
+            act_layer=nn.GELU,
+            **kwargs):
         super(BasicBlock, self).__init__()
-        self.SpatialMixer = SpatialMixer(hidden_size=dim)
+        mixer_args = {'hidden_size': dim}
+        if 'expand_ratio' in kwargs:
+            mixer_args['expand_ratio'] = kwargs['expand_ratio']
+        if 'num_heads' in kwargs:
+            mixer_args['num_heads'] = kwargs['num_heads']
+        if 'num_key_value_heads' in kwargs:
+            mixer_args['num_key_value_heads'] = kwargs['num_key_value_heads']
+        self.SpatialMixer = SpatialMixer(**mixer_args)
+
         hidden_dim = int(dim * hidden_rate)
-        self.ChannelMixer = Mlp(in_features=dim, hidden_features=hidden_dim, out_features=dim, act_layer=act_layer, drop=mlp_drop)
+        self.ChannelMixer = Mlp(in_features=dim, hidden_features=hidden_dim, out_features=dim, act_layer=act_layer,
+                                drop=mlp_drop)
         self.ln1 = nn.LayerNorm(dim)
         self.ln2 = nn.LayerNorm(dim)
         self.drop_path = DropPath(drop_prob=drop_rate) if drop_rate > 0 else nn.Identity()
@@ -40,7 +49,7 @@ class BasicBlock(nn.Module):
     def forward(
             self,
             x: torch.Tensor,
-            resolution:Optional[Tuple]=None
+            resolution: Optional[Tuple] = None
     ) -> torch.Tensor:
         assert x.dim() in [3, 4], 'Invalid dimension'
         xdim = x.dim()
